@@ -39,7 +39,7 @@ message Filter{
 // 水印
 message Watermark{
   uint32 x = 1;
-  uint32 y2 = 2;
+  uint32 y = 2;
 }
 message Spec{
   oneof data{

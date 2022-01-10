@@ -1,10 +1,7 @@
 use base64::{decode_config, encode_config, URL_SAFE_NO_PAD};
 use photon_rs::transform::SamplingFilter;
-
-use crate::pb;
-use crate::pb::abi::{filter, filter::Filter, ImageSpec, resize, Resize, Spec, spec};
-use crate::pb::abi::resize::{ResizeType, SampleFilter};
-use crate::pb::abi::spec::Data::Resize;
+use prost::Message;
+pub use abi::*;
 
 mod abi;
 
@@ -27,11 +24,10 @@ impl TryFrom<&str> for ImageSpec {
     type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let data = decode_config(value, URL_SAFE_NO_PAD);
+        let data = decode_config(value, URL_SAFE_NO_PAD)?;
         Ok(ImageSpec::decode(&data[..])?)
     }
 }
-
 // 辅助函数，photon_rs相应的方法需要字符串
 impl filter::Filter {
     pub fn to_str(&self) -> Option<&'static str> {
@@ -45,15 +41,15 @@ impl filter::Filter {
 }
 
 //与photon_rs的SamplingFilter转换
-impl From<SampleFilter> for SamplingFilter {
+impl From<resize::SampleFilter> for SamplingFilter {
     fn from(value: resize::SampleFilter) -> Self {
         match value {
-            SampleFilter::Undefined => SamplingFilter::Nearest,
-            SampleFilter::Nearest => SamplingFilter::Nearest,
-            SampleFilter::Triangle => SamplingFilter::Triangle,
-            SampleFilter::CatmullRom => SamplingFilter::CatmullRom,
-            SampleFilter::Gaussian => SamplingFilter::Gaussian,
-            SampleFilter::Lanczos3 => SamplingFilter::Lanczos3,
+            resize::SampleFilter::Undefined => SamplingFilter::Nearest,
+            resize::SampleFilter::Nearest => SamplingFilter::Nearest,
+            resize::SampleFilter::Triangle => SamplingFilter::Triangle,
+            resize::SampleFilter::CatmullRom => SamplingFilter::CatmullRom,
+            resize::SampleFilter::Gaussian => SamplingFilter::Gaussian,
+            resize::SampleFilter::Lanczos3 => SamplingFilter::Lanczos3,
         }
     }
 }
@@ -61,15 +57,37 @@ impl From<SampleFilter> for SamplingFilter {
 impl Spec {
     pub fn new_resize_seam_carve(width: u32, height: u32) -> Self {
         Self {
-            data: Some(Resize(Resize { width, height, rtype: ResizeType::SeamCarve as i32, filter: SampleFilter::Undefined as i32 }))
+            data: Some(spec::Data::Resize(Resize { width, height, rtype: resize::ResizeType::SeamCarve as i32, filter: resize::SampleFilter::Undefined as i32 }))
         }
     }
-    pub fn new_resize(width: u32, height: u32, filter: SampleFilter) -> Self {
-        Self { data: Some(Resize(Resize { width, height, rtype: ResizeType::Normal as i32, filter: filter as i32 })) }
+    pub fn new_resize(width: u32, height: u32, filter: resize::SampleFilter) -> Self {
+        Self { data: Some(spec::Data::Resize(Resize { width, height, rtype: resize::ResizeType::Normal as i32, filter: filter as i32 })) }
     }
-    pub fn new_filter(filter: Filter) -> Self {
+    pub fn new_filter(filter: filter::Filter) -> Self {
         Self {
-            data: Some(spec::Data::Filter(pb::abi::Filter { filter: filter as i32 }))
+            data: Some(spec::Data::Filter(Filter { filter: filter as i32 }))
         }
+    }
+    pub fn new_watermark(x: u32, y: u32) -> Self {
+        Self {
+            data: Some(spec::Data::Watermark(Watermark { x, y }))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::borrow::Borrow;
+    use std::convert::TryInto;
+
+    use super::*;
+
+    #[test]
+    fn encoded_spec_could_be_decoded() {
+        let spec1 = Spec::new_resize(600, 5, resize::SampleFilter::CatmullRom);
+        let spec2 = Spec::new_filter(filter::Filter::Marine);
+        let image_spec = ImageSpec::new(vec![spec1, spec2]);
+        let s: String = image_spec.borrow().into();
+        assert_eq!(image_spec, s.as_str().try_into().unwrap());
     }
 }
