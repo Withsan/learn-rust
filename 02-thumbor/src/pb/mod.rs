@@ -1,7 +1,7 @@
+pub use abi::*;
 use base64::{decode_config, encode_config, URL_SAFE_NO_PAD};
 use photon_rs::transform::SamplingFilter;
 use prost::Message;
-pub use abi::*;
 
 mod abi;
 
@@ -35,7 +35,7 @@ impl filter::Filter {
             filter::Filter::Marine => Some("marine"),
             filter::Filter::Oceanic => Some("oceanic"),
             filter::Filter::Islands => Some("islands"),
-            filter::Filter::Unspecified => None
+            filter::Filter::Unspecified => None,
         }
     }
 }
@@ -57,20 +57,34 @@ impl From<resize::SampleFilter> for SamplingFilter {
 impl Spec {
     pub fn new_resize_seam_carve(width: u32, height: u32) -> Self {
         Self {
-            data: Some(spec::Data::Resize(Resize { width, height, rtype: resize::ResizeType::SeamCarve as i32, filter: resize::SampleFilter::Undefined as i32 }))
+            data: Some(spec::Data::Resize(Resize {
+                width,
+                height,
+                rtype: resize::ResizeType::SeamCarve as i32,
+                filter: resize::SampleFilter::Undefined as i32,
+            })),
         }
     }
     pub fn new_resize(width: u32, height: u32, filter: resize::SampleFilter) -> Self {
-        Self { data: Some(spec::Data::Resize(Resize { width, height, rtype: resize::ResizeType::Normal as i32, filter: filter as i32 })) }
+        Self {
+            data: Some(spec::Data::Resize(Resize {
+                width,
+                height,
+                rtype: resize::ResizeType::Normal as i32,
+                filter: filter as i32,
+            })),
+        }
     }
     pub fn new_filter(filter: filter::Filter) -> Self {
         Self {
-            data: Some(spec::Data::Filter(Filter { filter: filter as i32 }))
+            data: Some(spec::Data::Filter(Filter {
+                filter: filter as i32,
+            })),
         }
     }
     pub fn new_watermark(x: u32, y: u32) -> Self {
         Self {
-            data: Some(spec::Data::Watermark(Watermark { x, y }))
+            data: Some(spec::Data::Watermark(Watermark { x, y })),
         }
     }
 }

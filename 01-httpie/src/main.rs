@@ -42,7 +42,7 @@ impl FromStr for KvPair {
 
     fn from_str(param: &str) -> std::result::Result<Self, Self::Err> {
         let mut split = param.split("=");
-        let err = || anyhow!(format!("Failed to parse {}",param));
+        let err = || anyhow!(format!("Failed to parse {}", param));
         Ok(Self {
             k: (split.next().ok_or_else(err)?).to_string(),
             v: (split.next().ok_or_else(err)?).to_string(),
