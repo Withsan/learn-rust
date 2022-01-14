@@ -20,6 +20,7 @@ use tracing::info;
 use pb::*;
 
 mod pb;
+mod engine;
 
 #[derive(Deserialize)]
 struct Params {
@@ -41,7 +42,7 @@ async fn main() {
             .layer(AddExtensionLayer::new(cache))
             .into_inner());
     let addr = "127.0.0.1:8080".parse().unwrap();
-    tracing::debug!("listening on {}", addr);
+    tracing::info!("listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
@@ -57,8 +58,8 @@ async fn generate(Path(Params { spec, url }): Path<Params>, Extension(cache): Ex
     let data = retrieve_image(&url, cache).await.map_err(|_| StatusCode::BAD_REQUEST)?;
     // TODO:处理图片，需要图片引擎
     let mut headers = HeaderMap::new();
-    headers.insert("content-type",HeaderValue::from_static("image/jpeg"));
-    Ok((headers,data.to_vec()))
+    headers.insert("content-type", HeaderValue::from_static("image/jpeg"));
+    Ok((headers, data.to_vec()))
 }
 
 async fn retrieve_image(url: &str, cache: Cache) -> Result<Bytes> {
